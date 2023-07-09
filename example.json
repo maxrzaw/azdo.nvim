@@ -1,0 +1,64 @@
+[
+  {
+    "codeReviewId": 1234,
+    "createdBy": {
+      "displayName": "Max Zawisa",
+      "uniqueName": "maxzawisa@maxzawisa.com"
+    },
+    "creationDate": "2023-07-01T16:30:31.6655471Z",
+    "description": "This is a test PR",
+    "mergeStatus": "succeeded",
+    "pullRequestId": 1234,
+    "repository": {
+      "name": "azdo.nvim",
+      "project": {
+        "name": "azdo"
+      }
+    },
+    "isDraft": false,
+    "reviewers": [
+      {
+        "displayName": "My Reviewer",
+        "hasDeclined": false,
+        "isRequired": true,
+        "vote": 1
+      }
+    ],
+    "sourceRefName": "refs/heads/feature-branch",
+    "status": "active",
+    "targetRefName": "refs/heads/main",
+    "title": "Test PR",
+    "url": "https://maxzawisa.com"
+  },
+  {
+    "codeReviewId": 1235,
+    "createdBy": {
+      "displayName": "Max Zawisa",
+      "uniqueName": "maxzawisa@maxzawisa.com"
+    },
+    "creationDate": "2023-06-01T16:30:31.6655471Z",
+    "description": "This is a second test PR",
+    "mergeStatus": "succeeded",
+    "pullRequestId": 1235,
+    "repository": {
+      "name": "azdo.nvim",
+      "project": {
+        "name": "azdo"
+      }
+    },
+    "isDraft": false,
+    "reviewers": [
+      {
+        "displayName": "My Reviewer",
+        "hasDeclined": false,
+        "isRequired": true,
+        "vote": 2
+      }
+    ],
+    "sourceRefName": "refs/heads/feature-branch-two",
+    "status": "active",
+    "targetRefName": "refs/heads/main",
+    "title": "Test PR Two",
+    "url": "https://maxzawisa.com"
+  }
+]

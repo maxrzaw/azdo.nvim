@@ -1,8 +1,8 @@
 local Job = require("plenary.job")
-local utils = require("utils")
+local utils = require("azdo.utils")
 local settings = utils.settings
-local pull_request_statuses = require("utils").pull_request_statuses
-local table_contains = require("utils").table_contains
+local pull_request_statuses = require("azdo.utils").pull_request_statuses
+local table_contains = require("azdo.utils").table_contains
 local M = {}
 
 local function getPullRequests(opts)
