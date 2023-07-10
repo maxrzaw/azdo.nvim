@@ -14,4 +14,15 @@ M.test = function()
     end)
 end
 
+local function addUserCommands()
+    vim.api.nvim_create_user_command("AzDOPullRequests", function()
+        require("azdo.commands").prs({})
+    end, {})
+end
+
+M.setup = function(opts)
+    addUserCommands()
+    vim.notify("Done setting up azdo.nvim")
+end
+
 return M
