@@ -30,21 +30,25 @@ local function getPullRequests(opts)
         table.insert(args, opts.username or settings.username)
     end
 
+    local result = nil
     Job:new({
         command = "az",
         args = args,
         cwd = vim.fn.getcwd(),
         on_exit = function(self, code, signal)
-            print("Result:")
-            local result = self:result()
-            print(vim.inspect(result))
+            local jobResult = self:result()
+            local stringResult = table.concat(jobResult)
+            local finalResult = vim.json.decode(stringResult)
+            result = finalResult
         end,
         on_stderr = function(error, data)
             print("Standard Error:")
             print(error)
             print(data)
         end,
-    }):start()
+    }):sync()
+
+    utils.promptUserToSelectPR(result)
 end
 
 M.prs = getPullRequests

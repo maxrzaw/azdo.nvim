@@ -10,7 +10,7 @@
     "mergeStatus": "succeeded",
     "pullRequestId": 1234,
     "repository": {
-      "name": "azdo.nvim",
+      "name": "test-repo",
       "project": {
         "name": "azdo"
       }
@@ -41,7 +41,7 @@
     "mergeStatus": "succeeded",
     "pullRequestId": 1235,
     "repository": {
-      "name": "azdo.nvim",
+      "name": "test-repo",
       "project": {
         "name": "azdo"
       }
