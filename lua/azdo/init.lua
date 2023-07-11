@@ -1,28 +1,19 @@
 local M = {}
-M.GetPRs = require("azdo.commands").prs
-
-M.test = function()
-    vim.ui.select({ { name = "tabs", desc = "inferior" }, { name = "spaces", desc = "superior" } }, {
-        prompt = "Select tabs or spaces",
-        format_item = function(item)
-            return "name: " .. item.name .. " desc: " .. item.desc
-        end,
-    }, function(choice)
-        if choice then
-            print("You are " .. choice.desc .. "!!")
-        end
-    end)
-end
 
 local function addUserCommands()
-    vim.api.nvim_create_user_command("AzDOPullRequests", function()
-        require("azdo.commands").prs({})
+    vim.api.nvim_create_user_command("AzDoCheckoutPullRequest", function()
+        require("azdo.commands").prompt_user_to_checkout_a_pr()
+    end, {})
+    vim.api.nvim_create_user_command("AzDoVoteOnPullRequest", function()
+        require("azdo.commands").prompt_user_to_vote_on_a_pr()
+    end, {})
+    vim.api.nvim_create_user_command("AzDoVoteOnCurrent", function()
+        require("azdo.commands").prompt_user_to_vote_on_current_ref()
     end, {})
 end
 
 M.setup = function(opts)
     addUserCommands()
-    vim.notify("Done setting up azdo.nvim")
 end
 
 return M

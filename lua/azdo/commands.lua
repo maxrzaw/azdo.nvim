@@ -1,56 +1,30 @@
-local Job = require("plenary.job")
 local utils = require("azdo.utils")
-local settings = utils.settings
-local pull_request_statuses = require("azdo.utils").pull_request_statuses
-local table_contains = require("azdo.utils").table_contains
+
 local M = {}
 
-local function getPullRequests(opts)
-    local args = { "repos", "pr", "list", "--query", utils.JMESPathString_list_prs }
-    local default_opts = { skip = 0, top = 100 }
-    local options = vim.tbl_deep_extend("keep", opts, default_opts)
-
-    -- if a valid option was passed in, add the status argument
-    if type(options.status) == "string" then
-        if table_contains(pull_request_statuses, options.status) then
-            table.insert(args, "--status")
-            table.insert(args, options.status)
-        end
-    end
-
-    -- if the repo is set, include repo flag
-    if options.repository then
-        table.insert(args, "--repository")
-        table.insert(args, options.repository)
-    end
-
-    -- if the reviewer flag is set, use the default user as username
-    if options.reviewer then
-        table.insert(args, "--reviewer")
-        table.insert(args, opts.username or settings.username)
-    end
-
-    local result = nil
-    Job:new({
-        command = "az",
-        args = args,
-        cwd = vim.fn.getcwd(),
-        on_exit = function(self, code, signal)
-            local jobResult = self:result()
-            local stringResult = table.concat(jobResult)
-            local finalResult = vim.json.decode(stringResult)
-            result = finalResult
-        end,
-        on_stderr = function(error, data)
-            print("Standard Error:")
-            print(error)
-            print(data)
-        end,
-    }):sync()
-
-    utils.promptUserToSelectPR(result)
+function M.prompt_user_to_checkout_a_pr()
+    local pull_requests = utils.get_pull_requests({})
+    utils.prompt_user_with_prs(pull_requests, "Select a PR to checkout", utils.checkout_pr)
 end
 
-M.prs = getPullRequests
+function M.prompt_user_to_vote_on_a_pr()
+    local pull_requests = utils.get_pull_requests({})
+    utils.prompt_user_with_prs(pull_requests, "Select a PR to vote on", function(pull_request)
+        utils.prompt_user_for_vote_on_pr(pull_request.pullRequestId, "Voting on " .. pull_request.title)
+    end)
+end
+
+function M.prompt_user_to_vote_on_current_ref()
+    local result = utils.get_pull_request_id_for_checked_out_ref()
+    local pull_request_id = result.pull_request_id
+    local ref = result.ref_name
+
+    if pull_request_id < 0 then
+        vim.notify("Could not find a Pull Request for ref: " .. ref, vim.log.levels.INFO)
+        return
+    end
+
+    utils.prompt_user_for_vote_on_pr(pull_request_id, "Voting on " .. ref)
+end
 
 return M
