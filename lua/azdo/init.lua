@@ -10,6 +10,9 @@ local function addUserCommands()
     vim.api.nvim_create_user_command("AzDoVoteOnCurrent", function()
         require("azdo.commands").prompt_user_to_vote_on_current_ref()
     end, {})
+    vim.api.nvim_create_user_command("AzDoCreatePullRequestFromCurrent", function()
+        require("azdo.commands").create_pull_request_for_current_branch({})
+    end, {})
 end
 
 M.setup = function(opts)
