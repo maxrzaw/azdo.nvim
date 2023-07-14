@@ -321,4 +321,14 @@ function M.create_pull_request_for_current_branch(opts)
     create_pull_request(title, target_branch, source_branch, delete_source_branch, description)
 end
 
+function M.reload()
+    -- unload all the files
+    package.loaded["azdo"] = nil
+    package.loaded["azdo.commands"] = nil
+    package.loaded["azdo.utils"] = nil
+
+    -- call setup again
+    require("azdo").setup({})
+end
+
 return M

@@ -34,4 +34,58 @@ function M.create_pull_request_for_current_branch(opts)
     utils.create_pull_request_for_current_branch(options)
 end
 
+function M.test()
+    local buf = vim.g.azdo_bufnr
+    if buf == nil then
+        buf = vim.api.nvim_create_buf(false, false)
+        vim.g.azdo_bufnr = buf
+        vim.api.nvim_buf_set_option(buf, "buftype", "acwrite")
+        vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+        vim.api.nvim_buf_set_name(buf, "AzDoPRDescription")
+    end
+
+    -- Clear the existing autocmds so we do not save multiple times
+    vim.api.nvim_clear_autocmds({ buffer = buf })
+
+    -- set the lines to the lines from the description
+    vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
+
+    -- Create the autocmds for saving
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+        buffer = buf,
+        desc = "AzDo Buffer Win leave command",
+        callback = function()
+            local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+            print("The lines are: " .. vim.inspect(lines))
+            vim.api.nvim_buf_set_option(0, "modified", false)
+        end,
+    })
+    vim.api.nvim_create_autocmd("BufWriteCmd", {
+        buffer = buf,
+        desc = "AzDo Buffer write command",
+        callback = function()
+            -- Do nothing here. I just want to enable :w
+            -- The saving actually happens in the BufWinLeave autocmd
+        end,
+    })
+
+    -- Open the window
+    local width = 100
+    local height = math.min(120, 60)
+    local ui = vim.api.nvim_list_uis()[1]
+    local opts = {
+        relative = "editor",
+        width = width,
+        height = height,
+        col = (ui.width / 2) - (width / 2),
+        row = (ui.height / 2) - (height / 2),
+        anchor = "NW",
+        style = "minimal",
+        border = "rounded",
+        title = "Azure DevOps Pull Request Description",
+        title_pos = "center",
+    }
+    vim.api.nvim_open_win(buf, true, opts)
+end
+
 return M

@@ -13,6 +13,13 @@ local function addUserCommands()
     vim.api.nvim_create_user_command("AzDoCreatePullRequestFromCurrent", function()
         require("azdo.commands").create_pull_request_for_current_branch({})
     end, {})
+    vim.api.nvim_create_user_command("AzTest", function()
+        require("azdo.utils").reload()
+        require("azdo.commands").test()
+    end, {})
+    vim.api.nvim_create_user_command("AzReload", function()
+        require("azdo.utils").reload()
+    end, {})
 end
 
 M.setup = function(opts)
