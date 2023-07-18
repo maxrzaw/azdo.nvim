@@ -15,7 +15,7 @@ function M.prompt_user_to_vote_on_a_pr()
 end
 
 function M.prompt_user_to_vote_on_current_ref()
-    local result = utils.get_pull_request_id_for_checked_out_ref()
+    local result = utils.get_pull_request_for_checked_out_ref()
     local pr = result.pr
     local ref = result.ref
 
@@ -32,6 +32,18 @@ function M.create_pull_request_for_current_branch(opts)
     local options = vim.tbl_extend("keep", opts, { target_branch = "main", delete_source_branch = true })
 
     utils.create_pull_request_for_current_branch(options)
+end
+
+function M.change_pull_request_description_for_current_branch()
+    local result = utils.get_pull_request_for_checked_out_ref()
+    local pr = result.pr
+    local ref = result.ref
+
+    if pr then
+        utils.change_pull_request_description(pr)
+    else
+        vim.notify("Could not find a Pull Request for ref: " .. ref, vim.log.levels.INFO)
+    end
 end
 
 function M.test()
