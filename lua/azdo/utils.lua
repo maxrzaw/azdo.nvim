@@ -125,9 +125,13 @@ end
 -- value sent to this arg will be a new line. For example:
 -- "First Line" "Second Line"
 local function set_pr_description(pull_request_id, description)
+    local _args = { "repos", "pr", "update", "--id", pull_request_id, "--description" }
+    for i, line in pairs(description) do
+        table.insert(_args, line)
+    end
     Job:new({
         command = "az",
-        args = { "repos", "pr", "update", "--id", pull_request_id, "--description", description },
+        args = _args,
         cwd = vim.fn.getcwd(),
     }):start()
 end
@@ -343,26 +347,46 @@ function M.change_pull_request_description(pr)
         for s in pr.description:gmatch("([^\n]*)\n?") do
             table.insert(description_lines, s)
         end
+        -- Removes a trailing newline. This will get rid of one trailing newline
+        -- even if it was intended, but I haven't figured out a way around it.
+        table.remove(description_lines)
     end
     vim.api.nvim_buf_set_lines(buf, 0, -1, true, description_lines)
+    vim.api.nvim_buf_set_option(buf, "modified", false)
+
+    vim.api.nvim_create_autocmd("BufWinEnter", {
+        buffer = buf,
+        desc = "AzDo set nohidden",
+        callback = function()
+            if vim.g.azdo_hidden == nil then
+                vim.g.azdo_hidden = vim.api.nvim_get_option("hidden")
+            end
+            vim.api.nvim_set_option("hidden", false)
+        end,
+    })
 
     -- Create the autocmds for saving
     vim.api.nvim_create_autocmd("BufWinLeave", {
         buffer = buf,
         desc = "AzDo Buffer Win leave command",
         callback = function()
-            local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-            set_pr_description(pr.pullRequestId, lines)
-            vim.notify("Pull Request " .. pr.pullRequestId .. " has been updated.")
-            vim.api.nvim_buf_set_option(0, "modified", false)
+            if not vim.api.nvim_buf_get_option(0, "modified") then
+                local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+                set_pr_description(pr.pullRequestId, lines)
+                vim.notify("Pull Request " .. pr.pullRequestId .. " has been updated.")
+            end
+
+            -- Restore the previous setting for hidden
+            vim.api.nvim_set_option("hidden", vim.g.azdo_hidden)
         end,
     })
     vim.api.nvim_create_autocmd("BufWriteCmd", {
         buffer = buf,
         desc = "AzDo Buffer write command",
         callback = function()
-            -- Do nothing here. I just want to enable :w
-            -- The saving actually happens in the BufWinLeave autocmd
+            -- All we are really doing here is marking that it is safe to
+            -- update the PR
+            vim.api.nvim_buf_set_option(0, "modified", false)
         end,
     })
 
