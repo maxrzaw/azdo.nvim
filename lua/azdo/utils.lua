@@ -121,12 +121,14 @@ local function set_pr_title(pull_request_id, title)
     }):start()
 end
 
--- New description for the pull request.  Can include markdown.  Each
--- value sent to this arg will be a new line. For example:
--- "First Line" "Second Line"
-local function set_pr_description(pull_request_id, description)
+--- New description for the pull request.  Can include markdown.  Each
+--- value sent to this arg will be a new line. For example:
+--- "First Line" "Second Line"
+---@param pull_request_id (integer) Pull Request ID
+---@param description_lines (string[]) Array of lines that make up the description
+function M.set_pr_description(pull_request_id, description_lines)
     local _args = { "repos", "pr", "update", "--id", pull_request_id, "--description" }
-    for i, line in pairs(description) do
+    for _, line in pairs(description_lines) do
         table.insert(_args, line)
     end
     Job:new({
@@ -296,39 +298,37 @@ local function create_pull_request(title, target_branch, source_branch, delete_s
         command = "az",
         args = args,
         cwd = vim.fn.getcwd(),
-        on_exit = function(job, code, signal)
-            print(vim.inspect(job:result()))
-            print("code " .. code)
-            print("signal " .. signal)
-        end,
-        on_stderr = function(error, data)
-            print("Standard Error:")
-            print(error)
-            print(data)
-        end,
+        on_exit = vim.schedule_wrap(function(self, code, _)
+            if code == 0 then
+                local result = vim.json.decode(table.concat(self:result())) --[[@as pull_request]]
+                vim.notify("Successfully created Pull Request " .. result.pullRequestId, vim.log.levels.INFO)
+            end
+        end),
+        on_stderr = vim.schedule_wrap(function(_, data)
+            vim.notify(vim.inspect(data), vim.log.levels.ERROR)
+        end),
     }):start()
 end
 
 --- Create a Pull Request for the current branch.
----@param opts { target_branch: string, delete_source_branch: boolean }
+---@param opts { target_branch: string, delete_source_branch: boolean, title: string, description: string[] }
 function M.create_pull_request_for_current_branch(opts)
     -- make sure the current branch is pushed
     push_current_branch_to_origin()
 
-    local title = vim.fn.input("Title: ")
+    local title = opts.title
     local target_branch = opts.target_branch
     local source_branch = get_current_branch()
     local delete_source_branch = opts.delete_source_branch
-    local description = { "I have not implemented description yet :(" }
+    local description = opts.description
 
     create_pull_request(title, target_branch, source_branch, delete_source_branch, description)
 end
 
-local function test() end
-
 ---Changes the description of a pull request
----@param pr pull_request
-function M.change_pull_request_description(pr)
+---@param on_finish fun(lines: string[])
+---@param init_lines string[] Initial lines for the buffer
+function M.edit_description(init_lines, on_finish)
     local buf = vim.g.azdo_bufnr
     if buf == nil then
         buf = vim.api.nvim_create_buf(false, false)
@@ -341,17 +341,7 @@ function M.change_pull_request_description(pr)
     -- Clear the existing autocmds so we do not save multiple times
     vim.api.nvim_clear_autocmds({ buffer = buf })
 
-    -- set the lines to the lines from the description
-    local description_lines = {}
-    if pr.description ~= vim.NIL then
-        for s in pr.description:gmatch("([^\n]*)\n?") do
-            table.insert(description_lines, s)
-        end
-        -- Removes a trailing newline. This will get rid of one trailing newline
-        -- even if it was intended, but I haven't figured out a way around it.
-        table.remove(description_lines)
-    end
-    vim.api.nvim_buf_set_lines(buf, 0, -1, true, description_lines)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, true, init_lines)
     vim.api.nvim_buf_set_option(buf, "modified", false)
 
     vim.api.nvim_create_autocmd("BufWinEnter", {
@@ -372,8 +362,7 @@ function M.change_pull_request_description(pr)
         callback = function()
             if not vim.api.nvim_buf_get_option(0, "modified") then
                 local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-                set_pr_description(pr.pullRequestId, lines)
-                vim.notify("Pull Request " .. pr.pullRequestId .. " has been updated.")
+                on_finish(lines)
             end
 
             -- Restore the previous setting for hidden
@@ -385,7 +374,7 @@ function M.change_pull_request_description(pr)
         desc = "AzDo Buffer write command",
         callback = function()
             -- All we are really doing here is marking that it is safe to
-            -- update the PR
+            -- update the description
             vim.api.nvim_buf_set_option(0, "modified", false)
         end,
     })

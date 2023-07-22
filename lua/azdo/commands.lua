@@ -26,12 +26,28 @@ function M.prompt_user_to_vote_on_current_ref()
     end
 end
 
---- Create Pull Request for current branch
----@param opts { target_branch?: string, delete_source_branch?: boolean }
+--- Create Pull Request for current branch.
+---
+--- `target_branch`: defaults to "main"
+--- `delete_source_branch`: defaults to true
+--- `title`: Not required, but you will be prompted for a title if missing or empty
+--- `description`: Not required, but you will be prompted for a description if missing
+---@param opts { target_branch?: string, delete_source_branch?: boolean, title?: string, description?: string[]}
 function M.create_pull_request_for_current_branch(opts)
     local options = vim.tbl_extend("keep", opts, { target_branch = "main", delete_source_branch = true })
 
-    utils.create_pull_request_for_current_branch(options)
+    if options.title == nil or options.title == "" then
+        options.title = vim.fn.input("Title: ")
+    end
+
+    if options.description ~= nil then
+        utils.create_pull_request_for_current_branch(options)
+    else
+        utils.edit_description({}, function(lines)
+            options.description = lines
+            utils.create_pull_request_for_current_branch(options)
+        end)
+    end
 end
 
 function M.change_pull_request_description_for_current_branch()
@@ -40,64 +56,27 @@ function M.change_pull_request_description_for_current_branch()
     local ref = result.ref
 
     if pr then
-        utils.change_pull_request_description(pr)
+        local description_lines = {}
+        if pr.description ~= vim.NIL then
+            for s in pr.description:gmatch("([^\n]*)\n?") do
+                table.insert(description_lines, s)
+            end
+            -- Removes a trailing newline. This will get rid of one trailing newline
+            -- even if it was intended, but I haven't figured out a way around it.
+            table.remove(description_lines)
+        end
+
+        utils.edit_description(description_lines, function(lines)
+            utils.set_pr_description(pr.pullRequestId, lines)
+            vim.notify("Pull Request " .. pr.pullRequestId .. " has been updated.")
+        end)
     else
         vim.notify("Could not find a Pull Request for ref: " .. ref, vim.log.levels.INFO)
     end
 end
 
 function M.test()
-    local buf = vim.g.azdo_bufnr
-    if buf == nil then
-        buf = vim.api.nvim_create_buf(false, false)
-        vim.g.azdo_bufnr = buf
-        vim.api.nvim_buf_set_option(buf, "buftype", "acwrite")
-        vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
-        vim.api.nvim_buf_set_name(buf, "AzDoPRDescription")
-    end
-
-    -- Clear the existing autocmds so we do not save multiple times
-    vim.api.nvim_clear_autocmds({ buffer = buf })
-
-    -- set the lines to the lines from the description
-    vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
-
-    -- Create the autocmds for saving
-    vim.api.nvim_create_autocmd("BufWinLeave", {
-        buffer = buf,
-        desc = "AzDo Buffer Win leave command",
-        callback = function()
-            local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-            print("The lines are: " .. vim.inspect(lines))
-            vim.api.nvim_buf_set_option(0, "modified", false)
-        end,
-    })
-    vim.api.nvim_create_autocmd("BufWriteCmd", {
-        buffer = buf,
-        desc = "AzDo Buffer write command",
-        callback = function()
-            -- Do nothing here. I just want to enable :w
-            -- The saving actually happens in the BufWinLeave autocmd
-        end,
-    })
-
-    -- Open the window
-    local width = 100
-    local height = math.min(120, 60)
-    local ui = vim.api.nvim_list_uis()[1]
-    local opts = {
-        relative = "editor",
-        width = width,
-        height = height,
-        col = (ui.width / 2) - (width / 2),
-        row = (ui.height / 2) - (height / 2),
-        anchor = "NW",
-        style = "minimal",
-        border = "rounded",
-        title = "Azure DevOps Pull Request Description",
-        title_pos = "center",
-    }
-    vim.api.nvim_open_win(buf, true, opts)
+    print("no testing function currently")
 end
 
 return M
